@@ -1,6 +1,6 @@
 # OAPI
 
-Simple OpenAPI Bundler
+A Simple OpenAPI Bundler
 
 ### CLI usage
 
@@ -21,6 +21,12 @@ deno install -f -r https://deno.land/x/openapi_bundler/oapi.ts
 
 ```shell
 oapi bundle ./openapi.yaml > ./openapi.bundle.yaml
+```
+
+or with a rmote file:
+
+```shell
+oapi bundle https://raw.githubusercontent.com/c4spar/deno-oapi/main/example/openapi.yaml
 ```
 
 ### Module usage
