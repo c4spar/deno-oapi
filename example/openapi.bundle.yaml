@@ -9,11 +9,11 @@ security:
   - bearer-jwt: []
 servers:
   - description: Local
-    url: "http://0.0.0.0:8000"
-  - description: Development
-    url: "https://api.dev.example.com"
+    url: 'http://0.0.0.0:8000'
+  - description: Develop
+    url: 'https://api.dev.example.com'
   - description: Production
-    url: "https://api.example.com"
+    url: 'https://api.example.com'
 tags:
   - name: Assets
     description: Asset service.
@@ -25,19 +25,19 @@ paths:
       tags:
         - Assets
       parameters:
-        - $ref: "#/components/parameters/offset"
-        - $ref: "#/components/parameters/limit"
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
       responses:
-        "200":
+        '200':
           description: Successfully obtained a list of asset.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Asset"
-        "400":
-          $ref: "#/components/responses/BadRequest"
+                  $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/BadRequest'
     post:
       description: Greate a new asset.
       operationId: createAsset
@@ -47,61 +47,61 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: "#/components/schemas/CreateAsset"
+              $ref: '#/components/schemas/CreateAsset'
       responses:
-        "201":
-          $ref: "#/components/responses/Created"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-  "/assets/{id}":
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  '/assets/{id}':
     put:
       description: Update an asset.
       operationId: updateAsset
       tags:
         - Assets
       parameters:
-        - $ref: "#/components/parameters/asset_id"
+        - $ref: '#/components/parameters/asset_id'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateAsset"
+              $ref: '#/components/schemas/UpdateAsset'
       responses:
-        "200":
-          $ref: "#/components/responses/OK"
-        "400":
-          $ref: "#/components/responses/BadRequest"
+        '200':
+          $ref: '#/components/responses/OK'
+        '400':
+          $ref: '#/components/responses/BadRequest'
     delete:
       description: Delete an asset.
       operationId: deleteAsset
       tags:
         - Assets
       parameters:
-        - $ref: "#/components/parameters/asset_id"
+        - $ref: '#/components/parameters/asset_id'
       responses:
-        "200":
-          $ref: "#/components/responses/OK"
-        "400":
-          $ref: "#/components/responses/BadRequest"
+        '200':
+          $ref: '#/components/responses/OK'
+        '400':
+          $ref: '#/components/responses/BadRequest'
     get:
       description: Get an asset.
       operationId: getAsset
       tags:
         - Assets
       parameters:
-        - $ref: "#/components/parameters/asset_id"
+        - $ref: '#/components/parameters/asset_id'
       responses:
-        "200":
+        '200':
           description: Successfully obtained asset details.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Asset"
-        "400":
-          $ref: "#/components/responses/BadRequest"
+                  $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 components:
   securitySchemes:
     bearer_token:
@@ -114,13 +114,13 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error2"
+            $ref: '#/components/schemas/Error2'
     BadRequest:
       description: Bad Request
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error'
     Created:
       description: Created
     OK:
@@ -187,3 +187,4 @@ components:
       required: true
       schema:
         type: number
+
