@@ -24,8 +24,8 @@
 deno install --allow-read --allow-net -f -r https://raw.githubusercontent.com/c4spar/deno-oapi/main/oapi.ts
 ```
 
-You can also omit the permission flag than the permissions will be requested if
-needed:
+You can also omit the permission flag's, than the permissions will be requested
+if needed:
 
 ```shell
 deno install -f -r https://raw.githubusercontent.com/c4spar/deno-oapi/main/oapi.ts
