@@ -181,14 +181,21 @@ async function loadSpec<T extends unknown>(
   let content: string;
 
   try {
-    if (isRemote(file)) {
-      const response = await fetch(file);
-      content = await response.text();
-    } else if (isRemote(base)) {
-      const response = await fetch(new URL(file, base));
+    if (isRemote(file) || isRemote(base)) {
+      const url = isRemote(file) ? new URL(file) : new URL(file, base);
+      await Deno.permissions.request({
+        name: "net",
+        host: url.host,
+      });
+      const response = await fetch(url);
       content = await response.text();
     } else {
-      content = await Deno.readTextFile(join(base, file));
+      const path = join(base, file);
+      await Deno.permissions.request({
+        name: "read",
+        path: path,
+      });
+      content = await Deno.readTextFile(path);
     }
   } catch (error) {
     throw new Error(`File not found: "${join(base, file)}"`, { cause: error });
