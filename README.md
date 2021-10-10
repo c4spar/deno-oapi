@@ -37,7 +37,7 @@ deno install -f -r https://raw.githubusercontent.com/c4spar/deno-oapi/main/oapi.
 oapi bundle ./openapi.yaml > ./openapi.bundle.yaml
 ```
 
-or with a rmote file:
+or with a remote file:
 
 ```shell
 oapi bundle https://raw.githubusercontent.com/c4spar/deno-oapi/main/example/openapi.yaml
