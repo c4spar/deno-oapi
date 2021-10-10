@@ -8,11 +8,17 @@ import {
   stringifyYaml,
 } from "./deps.ts";
 
-export async function stringify(file: string | OpenAPIV3_1.Document) {
-  return stringifyYaml(
-    typeof file === "string" ? await bundle(file) : file,
-    { noRefs: true },
-  );
+export function stringify(file: string): Promise<string>;
+export function stringify(document: OpenAPIV3_1.Document): string;
+export function stringify(
+  fileOrDocument: string | OpenAPIV3_1.Document,
+): string | Promise<string> {
+  if (typeof fileOrDocument === "string") {
+    return bundle(fileOrDocument).then((content) =>
+      stringifyYaml(content, { noRefs: true })
+    );
+  }
+  return stringifyYaml(fileOrDocument, { noRefs: true });
 }
 
 export async function bundle(file: string): Promise<OpenAPIV3_1.Document> {
