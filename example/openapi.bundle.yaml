@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
-  title: Media API
-  description: API for an cloud based media service
+  title: Example API
+  description: Example API description
   version: 0.1.0
   contact:
     name: example
