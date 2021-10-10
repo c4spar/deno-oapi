@@ -7,14 +7,14 @@ A Simple OpenAPI Bundler
 #### Install
 
 ```shell
-deno install --allow-read --allow-net -f -r https://deno.land/x/openapi_bundler/oapi.ts
+deno install --allow-read --allow-net -f -r https://raw.githubusercontent.com/c4spar/deno-oapi/main/oapi.ts
 ```
 
 You can also omit the permission flag than the permissions will be requested if
 needed:
 
 ```shell
-deno install -f -r https://deno.land/x/openapi_bundler/oapi.ts
+deno install -f -r https://raw.githubusercontent.com/c4spar/deno-oapi/main/oapi.ts
 ```
 
 #### Usage
@@ -32,7 +32,10 @@ oapi bundle https://raw.githubusercontent.com/c4spar/deno-oapi/main/example/open
 ### Module usage
 
 ```typescript
-import { bundle, stringify } from "https://deno.land/x/openapi_bundler/mod.ts";
+import {
+  bundle,
+  stringify,
+} from "https://raw.githubusercontent.com/c4spar/deno-oapi/main/mod.ts";
 
 const documentStr = await stringify("openapi.yaml");
 
