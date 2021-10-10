@@ -1,15 +1,14 @@
 import {
   basename,
   blue,
-  bold,
   dim,
   dirname,
+  green,
   join,
   // deno-lint-ignore camelcase
   OpenAPIV3_1,
   parseYaml,
   stringifyYaml,
-  yellow,
 } from "./deps.ts";
 
 interface OapiOptions {
@@ -37,10 +36,16 @@ export async function bundle(
   file: string,
   options?: OapiOptions,
 ): Promise<OpenAPIV3_1.Document> {
+  console.error(green("Bundle"), file);
   const base = dirname(file);
   file = basename(file);
 
-  const document = await loadSpec<OpenAPIV3_1.Document>(file, base, options);
+  const document = await loadSpec<OpenAPIV3_1.Document>(
+    file,
+    base,
+    undefined,
+    options,
+  );
 
   if (document.components) {
     await parseRefs(
@@ -49,6 +54,7 @@ export async function bundle(
       base,
       document,
       document,
+      options,
     );
   }
 
@@ -59,6 +65,7 @@ export async function bundle(
           def.$ref,
           base,
           document,
+          options,
         );
       }
     }
@@ -71,13 +78,14 @@ async function parsePathRef(
   file: string,
   base: string,
   document: OpenAPIV3_1.Document,
+  options?: OapiOptions,
 ) {
   let [path, subPath] = file.split("#");
   subPath = subPath.replace(/\/paths\//g, "");
 
   const components = await loadSpec<
     OpenAPIV3_1.ComponentsObject & { paths: OpenAPIV3_1.PathsObject }
-  >(path, base);
+  >(path, base, undefined, options);
 
   const paths = subPath.length ? components.paths[subPath] : components.paths;
 
@@ -87,6 +95,7 @@ async function parsePathRef(
     base,
     components,
     document,
+    options,
   );
 }
 
@@ -96,6 +105,7 @@ async function parseRefs(
   basePath: string,
   parentDef: Record<string, unknown>,
   document: OpenAPIV3_1.Document,
+  options?: OapiOptions,
 ): Promise<Record<string, unknown>> {
   for (const [name, value] of Object.entries(def)) {
     if (isRecord(value)) {
@@ -112,6 +122,7 @@ async function parseRefs(
             value.$ref,
             basePath,
             document,
+            options,
           );
         }
       } else {
@@ -121,6 +132,7 @@ async function parseRefs(
           basePath,
           parentDef,
           document,
+          options,
         );
       }
     }
@@ -155,13 +167,14 @@ async function parseExternalRef(
   file: string,
   base: string,
   document: OpenAPIV3_1.Document,
+  options?: OapiOptions,
 ) {
   const [path, subPath] = file.split("#/");
   const subPathParts = subPath.split("/");
 
   const components = await loadSpec<
     OpenAPIV3_1.ComponentsObject & { paths: OpenAPIV3_1.PathsObject }
-  >(path, join(base, parentDir));
+  >(path, base, parentDir, options);
 
   // deno-lint-ignore no-explicit-any
   let comps: Record<string, any> = components;
@@ -180,6 +193,7 @@ async function parseExternalRef(
     base,
     components,
     document,
+    options,
   );
 
   return { $ref: `#/components/${subPath}` };
@@ -192,6 +206,7 @@ function isRemote(file: string): boolean {
 async function loadSpec<T extends unknown>(
   file: string,
   base: string,
+  parentDir?: string,
   options?: OapiOptions,
 ): Promise<T> {
   const verbose = Number(options?.verbose);
@@ -199,8 +214,10 @@ async function loadSpec<T extends unknown>(
 
   try {
     if (isRemote(file) || isRemote(base)) {
-      const url = isRemote(file) ? new URL(file) : new URL(file, base);
-      verbose > 0 && console.log(bold("Load remote ref:"), blue(url.href));
+      const url = isRemote(file)
+        ? new URL(file)
+        : new URL(parentDir ? parentDir + "/" + file : file, base + "/");
+      verbose > 0 && console.error(green("Load remote ref"), blue(url.href));
       await Deno.permissions.request({
         name: "net",
         host: url.host,
@@ -211,16 +228,17 @@ async function loadSpec<T extends unknown>(
       }
       content = await response.text();
     } else {
-      const path = join(base, file);
-      verbose > 0 && console.log(bold("Load local ref:"), yellow(path));
+      const path = parentDir ? join(base, parentDir, file) : join(base, file);
+      verbose > 0 && console.error(green("Load local ref"), blue(path));
       await Deno.permissions.request({
         name: "read",
         path: path,
       });
       content = await Deno.readTextFile(path);
     }
-    verbose > 2 && console.log(bold("Content:"), dim(content));
+    verbose > 2 && console.error(green("Content"), "\n" + dim(content));
   } catch (error) {
+    verbose > 2 && console.error(error);
     if (error instanceof Deno.errors.NotFound) {
       throw new Error(`File not found: "${join(base, file)}"`, {
         cause: error,
