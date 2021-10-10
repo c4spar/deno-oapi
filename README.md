@@ -30,7 +30,7 @@ import { bundle, stringify } from "https://deno.land/x/openapi_bundler/mod.ts";
 
 const documentStr = await stringify("openapi.yaml");
 
-// of:
+// or:
 
 const document = await bundle("openapi.yaml");
 
