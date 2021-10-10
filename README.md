@@ -1,4 +1,16 @@
-# OAPI
+# OpenAPI Bundler
+
+<p>
+  <a href="https://github.com/c4spar/deno-oapi/actions/workflows/test.yml">
+    <img alt="Build status" src="https://github.com/c4spar/deno-oapi/workflows/Test/badge.svg?branch=main" />
+  </a>
+  <a href="https://codecov.io/gh/c4spar/deno-oapi">
+    <img src="https://codecov.io/gh/c4spar/deno-oapi/branch/main/graph/badge.svg"/>
+  </a>
+  <a href="../LICENSE">
+    <img alt="License" src="https://img.shields.io/github/license/c4spar/deno-oapi?logo=github" />
+  </a>
+</p>
 
 A Simple OpenAPI Bundler
 
