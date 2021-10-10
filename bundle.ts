@@ -198,7 +198,17 @@ async function loadSpec<T extends unknown>(
       content = await Deno.readTextFile(path);
     }
   } catch (error) {
-    throw new Error(`File not found: "${join(base, file)}"`, { cause: error });
+    if (error instanceof Deno.errors.NotFound) {
+      throw new Error(`File not found: "${join(base, file)}"`, {
+        cause: error,
+      });
+    } else if (error instanceof Deno.errors.PermissionDenied) {
+      throw new Error(`Permission denied: "${join(base, file)}"`, {
+        cause: error,
+      });
+    } else {
+      throw error;
+    }
   }
 
   return parseYaml(content) as T;
