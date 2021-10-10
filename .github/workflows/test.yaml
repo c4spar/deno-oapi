@@ -25,10 +25,10 @@ jobs:
           deno-version: ${{ matrix.deno }}
 
       - name: Run tests
-        run: deno test --coverage=.cov --allow-read=./example --unstable --jobs 2
+        run: deno test --coverage .cov --allow-read example --jobs 2 --shuffle
 
       - name: Generate lcov
-        run: deno coverage --lcov ./cov > cov.lcov
+        run: deno coverage --lcov cov > cov.lcov
 
       - name: Upload coverage
         uses: codecov/codecov-action@v2
