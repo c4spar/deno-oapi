@@ -1,0 +1,40 @@
+parameters:
+  limit:
+    description: The maximum number of items to return.
+    in: query
+    name: limit
+    schema:
+      type: integer
+  offset:
+    description: The number of objects to skip before starting to collect the result set.
+    in: query
+    name: offset
+    schema:
+      type: number
+
+schemas:
+  Error:
+    type: object
+    required:
+      - code
+      - message
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+
+responses:
+  BadRequest:
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: "#/schemas/Error"
+  Created:
+    description: Created
+  OK:
+    description: OK
+  Unauthorized:
+    description: Unauthorized

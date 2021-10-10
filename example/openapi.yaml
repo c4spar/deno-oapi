@@ -1,0 +1,41 @@
+openapi: 3.0.1
+info:
+  title: Media API
+  description: API for an cloud based media service
+  version: 0.1.0
+  contact:
+    name: example
+
+security:
+  - bearer-jwt: []
+
+servers:
+  - description: Local
+    url: "http://0.0.0.0:8000"
+  - description: Develop
+    url: "https://api.dev.example.com"
+  - description: Production
+    url: "https://api.example.com"
+
+tags:
+  - name: Assets
+    description: Asset service.
+
+paths:
+  /assets:
+    $ref: "resources/asset.yaml#/paths/assets"
+  /assets/{id}:
+    $ref: "resources/asset.yaml#/paths/assetsId"
+
+components:
+  securitySchemes:
+    bearer_token:
+      type: openIdConnect
+      openIdConnectUrl: "login.dev.example.net:8443/auth/realms/example/.well-known/openid-configuration"
+  responses:
+    BadRequest2:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "components2.yaml#/schemas/Error2"

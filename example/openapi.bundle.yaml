@@ -1,0 +1,189 @@
+openapi: 3.0.1
+info:
+  title: Media API
+  description: API for an cloud based media service
+  version: 0.1.0
+  contact:
+    name: example
+security:
+  - bearer-jwt: []
+servers:
+  - description: Local
+    url: "http://0.0.0.0:8000"
+  - description: Development
+    url: "https://api.dev.example.com"
+  - description: Production
+    url: "https://api.example.com"
+tags:
+  - name: Assets
+    description: Asset service.
+paths:
+  /assets:
+    get:
+      description: Get a list of assets.
+      operationId: getAssets
+      tags:
+        - Assets
+      parameters:
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Successfully obtained a list of asset.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Asset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      description: Greate a new asset.
+      operationId: createAsset
+      tags:
+        - Assets
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateAsset"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  "/assets/{id}":
+    put:
+      description: Update an asset.
+      operationId: updateAsset
+      tags:
+        - Assets
+      parameters:
+        - $ref: "#/components/parameters/asset_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAsset"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    delete:
+      description: Delete an asset.
+      operationId: deleteAsset
+      tags:
+        - Assets
+      parameters:
+        - $ref: "#/components/parameters/asset_id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    get:
+      description: Get an asset.
+      operationId: getAsset
+      tags:
+        - Assets
+      parameters:
+        - $ref: "#/components/parameters/asset_id"
+      responses:
+        "200":
+          description: Successfully obtained asset details.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Asset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+components:
+  securitySchemes:
+    bearer_token:
+      type: openIdConnect
+      openIdConnectUrl: >-
+        login.dev.example.net:8443/auth/realms/example/.well-known/openid-configuration
+  responses:
+    BadRequest2:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error2"
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Created:
+      description: Created
+    OK:
+      description: OK
+  schemas:
+    Error2:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+    Asset:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    CreateAsset:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    UpdateAsset:
+      type: object
+      properties:
+        name:
+          type: string
+  parameters:
+    offset:
+      description: The number of objects to skip before starting to collect the result set.
+      in: query
+      name: offset
+      schema:
+        type: number
+    limit:
+      description: The maximum number of items to return.
+      in: query
+      name: limit
+      schema:
+        type: integer
+    asset_id:
+      description: The id of the asset.
+      in: path
+      name: asset_id
+      required: true
+      schema:
+        type: number

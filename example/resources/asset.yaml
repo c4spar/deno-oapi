@@ -1,0 +1,115 @@
+paths:
+  assets:
+    get:
+      description: Get a list of assets.
+      operationId: getAssets
+      tags:
+        - Assets
+      parameters:
+        - $ref: "../components.yaml#/parameters/offset"
+        - $ref: "../components.yaml#/parameters/limit"
+      responses:
+        200:
+          description: Successfully obtained a list of asset.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/schemas/Asset"
+        400:
+          $ref: "../components.yaml#/responses/BadRequest"
+    post:
+      description: Greate a new asset.
+      operationId: createAsset
+      tags:
+        - Assets
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/schemas/CreateAsset"
+      responses:
+        201:
+          $ref: "../components.yaml#/responses/Created"
+        400:
+          $ref: "../components.yaml#/responses/BadRequest"
+  assetsId:
+    put:
+      description: Update an asset.
+      operationId: updateAsset
+      tags:
+        - Assets
+      parameters:
+        - $ref: "#/parameters/asset_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/schemas/UpdateAsset"
+      responses:
+        200:
+          $ref: "../components.yaml#/responses/OK"
+        400:
+          $ref: "../components.yaml#/responses/BadRequest"
+    delete:
+      description: Delete an asset.
+      operationId: deleteAsset
+      tags:
+        - Assets
+      parameters:
+        - $ref: "#/parameters/asset_id"
+      responses:
+        200:
+          $ref: "../components.yaml#/responses/OK"
+        400:
+          $ref: "../components.yaml#/responses/BadRequest"
+    get:
+      description: Get an asset.
+      operationId: getAsset
+      tags:
+        - Assets
+      parameters:
+        - $ref: "#/parameters/asset_id"
+      responses:
+        200:
+          description: Successfully obtained asset details.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/schemas/Asset"
+        400:
+          $ref: "../components.yaml#/responses/BadRequest"
+
+schemas:
+  Asset:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+  CreateAsset:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+  UpdateAsset:
+    type: object
+    properties:
+      name:
+        type: string
+
+parameters:
+  asset_id:
+    description: The id of the asset.
+    in: path
+    name: asset_id
+    required: true
+    schema:
+      type: number
