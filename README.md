@@ -16,7 +16,7 @@
   <b>A Simple OpenAPI Bundler</b>
 </p>
 
-### CLI usage
+### CLI
 
 #### Install
 
@@ -43,7 +43,7 @@ or with a rmote file:
 oapi bundle https://raw.githubusercontent.com/c4spar/deno-oapi/main/example/openapi.yaml
 ```
 
-### Module usage
+### Module
 
 ```typescript
 import {
