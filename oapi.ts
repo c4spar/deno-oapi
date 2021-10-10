@@ -12,9 +12,17 @@ export const oapi = new Command<void>()
     "Output an single openapi file with all external references.\n\n" +
       "  External references will be loaded from remote if <file> is an url.",
   )
+  .option<{ verbose: number }>(
+    "-v, --verbose",
+    "Increase debug output.",
+    {
+      collect: true,
+      value: (_, previus = 0) => ++previus,
+    },
+  )
   .arguments<[file: string]>("<file:string>")
-  .action(async (_options, file: string) => {
-    console.log(await stringify(file));
+  .action(async ({ verbose }, file: string) => {
+    console.log(await stringify(file, { verbose }));
   })
   .command(
     "upgrade",

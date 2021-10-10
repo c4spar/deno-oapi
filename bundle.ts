@@ -1,31 +1,46 @@
 import {
   basename,
+  blue,
+  bold,
+  dim,
   dirname,
   join,
   // deno-lint-ignore camelcase
   OpenAPIV3_1,
   parseYaml,
   stringifyYaml,
+  yellow,
 } from "./deps.ts";
 
-export function stringify(file: string): Promise<string>;
-export function stringify(document: OpenAPIV3_1.Document): string;
+interface OapiOptions {
+  verbose?: number;
+}
+
+export function stringify(file: string, options?: OapiOptions): Promise<string>;
+export function stringify(
+  document: OpenAPIV3_1.Document,
+  options?: OapiOptions,
+): string;
 export function stringify(
   fileOrDocument: string | OpenAPIV3_1.Document,
+  options?: OapiOptions,
 ): string | Promise<string> {
   if (typeof fileOrDocument === "string") {
-    return bundle(fileOrDocument).then((content) =>
+    return bundle(fileOrDocument, options).then((content) =>
       stringifyYaml(content, { noRefs: true })
     );
   }
   return stringifyYaml(fileOrDocument, { noRefs: true });
 }
 
-export async function bundle(file: string): Promise<OpenAPIV3_1.Document> {
+export async function bundle(
+  file: string,
+  options?: OapiOptions,
+): Promise<OpenAPIV3_1.Document> {
   const base = dirname(file);
   file = basename(file);
 
-  const document = await loadSpec<OpenAPIV3_1.Document>(file, base);
+  const document = await loadSpec<OpenAPIV3_1.Document>(file, base, options);
 
   if (document.components) {
     await parseRefs(
@@ -177,26 +192,34 @@ function isRemote(file: string): boolean {
 async function loadSpec<T extends unknown>(
   file: string,
   base: string,
+  options?: OapiOptions,
 ): Promise<T> {
+  const verbose = Number(options?.verbose);
   let content: string;
 
   try {
     if (isRemote(file) || isRemote(base)) {
       const url = isRemote(file) ? new URL(file) : new URL(file, base);
+      verbose > 0 && console.log(bold("Load remote ref:"), blue(url.href));
       await Deno.permissions.request({
         name: "net",
         host: url.host,
       });
       const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${url} - ${await response.text()}`);
+      }
       content = await response.text();
     } else {
       const path = join(base, file);
+      verbose > 0 && console.log(bold("Load local ref:"), yellow(path));
       await Deno.permissions.request({
         name: "read",
         path: path,
       });
       content = await Deno.readTextFile(path);
     }
+    verbose > 2 && console.log(bold("Content:"), dim(content));
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
       throw new Error(`File not found: "${join(base, file)}"`, {
