@@ -1,6 +1,6 @@
-# OpenAPI Bundler
+<h1 align="center">OpenAPI Bundler</h1>
 
-<p>
+<p align="center">
   <a href="https://github.com/c4spar/deno-oapi/actions/workflows/test.yml">
     <img alt="Build status" src="https://github.com/c4spar/deno-oapi/workflows/Test/badge.svg?branch=main" />
   </a>
@@ -12,7 +12,9 @@
   </a>
 </p>
 
-A Simple OpenAPI Bundler
+<p align="center">
+  <b>A Simple OpenAPI Bundler</b>
+</p>
 
 ### CLI usage
 
