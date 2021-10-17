@@ -29,6 +29,7 @@ export function stringify(
       stringifyYaml(content, { noRefs: true })
     );
   }
+
   return stringifyYaml(fileOrDocument, { noRefs: true });
 }
 
@@ -87,7 +88,11 @@ async function parsePathRef(
     OpenAPIV3_1.ComponentsObject & { paths: OpenAPIV3_1.PathsObject }
   >(path, base, undefined, options);
 
-  const paths = subPath.length ? components.paths[subPath] : components.paths;
+  const paths = components.paths[subPath];
+
+  if (!paths) {
+    throw new Error(`Path ref "${file}" not found.`);
+  }
 
   return paths && await parseRefs(
     dirname(path),
@@ -111,7 +116,7 @@ async function parseRefs(
     if (isRecord(value)) {
       if (typeof value.$ref === "string") {
         if (value.$ref.at(0) === "#") {
-          def[name] = parseRef(
+          def[name] = parseInternalRef(
             value.$ref,
             parentDef,
             document,
@@ -141,7 +146,7 @@ async function parseRefs(
   return def;
 }
 
-function parseRef(
+function parseInternalRef(
   file: string,
   // deno-lint-ignore no-explicit-any
   components: Record<string, any>,
@@ -153,6 +158,9 @@ function parseRef(
   // deno-lint-ignore no-explicit-any
   let docComps: Record<string, any> = document.components ??= {};
   for (const path of subPathParts) {
+    if (!components[path]) {
+      throw new ReferenceError(`Ref "${file}" not found.`);
+    }
     components = components[path];
     docComps[path] ??= {};
     docComps = docComps[path];
@@ -181,6 +189,9 @@ async function parseExternalRef(
   // deno-lint-ignore no-explicit-any
   let docComps: Record<string, any> = document.components ??= {};
   for (const path of subPathParts) {
+    if (!comps[path]) {
+      throw new ReferenceError(`External ref "${file}" not found.`);
+    }
     comps = comps[path];
     docComps[path] ??= {};
     docComps = docComps[path];
@@ -199,10 +210,6 @@ async function parseExternalRef(
   return { $ref: `#/components/${subPath}` };
 }
 
-function isRemote(file: string): boolean {
-  return file.startsWith("http://") || file.startsWith("https://");
-}
-
 async function loadSpec<T extends unknown>(
   file: string,
   base: string,
@@ -217,42 +224,56 @@ async function loadSpec<T extends unknown>(
       const url = isRemote(file)
         ? new URL(file)
         : new URL(parentDir ? parentDir + "/" + file : file, base + "/");
+
       verbose > 0 && console.error(green("Load remote ref"), blue(url.href));
+
       await Deno.permissions.request({
         name: "net",
         host: url.host,
       });
+
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${url} - ${await response.text()}`);
       }
+
       content = await response.text();
     } else {
       const path = parentDir ? join(base, parentDir, file) : join(base, file);
+
       verbose > 0 && console.error(green("Load local ref"), blue(path));
+
       await Deno.permissions.request({
         name: "read",
-        path: path,
+        path,
       });
+
       content = await Deno.readTextFile(path);
     }
-    verbose > 2 && console.error(green("Content"), "\n" + dim(content));
+
+    verbose > 2 && console.error(dim(content));
   } catch (error) {
     verbose > 2 && console.error(error);
     if (error instanceof Deno.errors.NotFound) {
-      throw new Error(`File not found: "${join(base, file)}"`, {
-        cause: error,
-      });
+      throw new Deno.errors.NotFound(
+        `File not found: "${join(base, file)}"`,
+        { cause: error },
+      );
     } else if (error instanceof Deno.errors.PermissionDenied) {
-      throw new Error(`Permission denied: "${join(base, file)}"`, {
-        cause: error,
-      });
+      throw new Deno.errors.PermissionDenied(
+        `Permission denied: "${join(base, file)}"`,
+        { cause: error },
+      );
     } else {
       throw error;
     }
   }
 
   return parseYaml(content) as T;
+}
+
+function isRemote(file: string): boolean {
+  return file.startsWith("http://") || file.startsWith("https://");
 }
 
 function isRecord(obj: unknown): obj is Record<string, unknown> {
