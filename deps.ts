@@ -13,6 +13,7 @@ export {
   dim,
   green,
 } from "https://deno.land/std@0.111.0/fmt/colors.ts";
+export { grant } from "https://deno.land/std@0.111.0/permissions/mod.ts";
 export type {
   OpenAPIV3,
   OpenAPIV3_1,

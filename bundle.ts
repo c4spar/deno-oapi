@@ -3,6 +3,7 @@ import {
   blue,
   dim,
   dirname,
+  grant,
   green,
   join,
   // deno-lint-ignore camelcase
@@ -227,7 +228,7 @@ async function loadSpec<T extends unknown>(
 
       verbose > 0 && console.error(green("Load remote ref"), blue(url.href));
 
-      await Deno.permissions.request({
+      await grant({
         name: "net",
         host: url.host,
       });
@@ -243,7 +244,7 @@ async function loadSpec<T extends unknown>(
 
       verbose > 0 && console.error(green("Load local ref"), blue(path));
 
-      await Deno.permissions.request({
+      await grant({
         name: "read",
         path,
       });
