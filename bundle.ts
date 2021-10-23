@@ -34,6 +34,7 @@ interface Spec {
   base: string;
   document: OpenAPIV3_1.Document;
   cache: Record<string, boolean>;
+  fileCache: Record<string, unknown>;
 }
 
 interface Context {
@@ -48,13 +49,19 @@ export async function bundle(
 ): Promise<OpenAPIV3_1.Document> {
   log.info(green("Bundle"), file);
 
-  const document = await loadSpec<OpenAPIV3_1.Document>(file);
+  const fileCache = {};
+
+  const document = await loadSpec<OpenAPIV3_1.Document>(
+    file,
+    fileCache,
+  );
 
   const spec: Spec = {
     file,
     base: dirname(file),
     document,
     cache: {},
+    fileCache,
   };
 
   if (document.components) {
@@ -90,7 +97,7 @@ async function parsePathRef(
 
   const document = await loadSpec<
     OpenAPIV3_1.ComponentsObject & { paths: OpenAPIV3_1.PathsObject }
-  >($file, spec.base);
+  >($file, spec.fileCache, spec.base);
   const context: Context = { file: $ref, base: dirname($file), document };
 
   const node = get($path, document);
@@ -147,13 +154,22 @@ async function parseInternalRef(
   context: Context,
   spec: Spec,
 ) {
+  const [_, $path] = $ref.split("#/");
+  const cacheKey = context.file + $ref;
+  if (spec.cache[cacheKey]) {
+    log.debugUgly(
+      "Parse int ref %s %s %s",
+      blue(context.file),
+      magenta($ref),
+      dim("(From cache)"),
+    );
+    return { $ref: `#/components/${$path}` };
+  }
   log.debugVerbose(
     "Parse int ref %s %s",
     blue(context.file),
     magenta($ref),
   );
-
-  const [_, $path] = $ref.split("#/");
 
   spec.document.components ??= {};
   const node = get($path, context.document);
@@ -198,7 +214,7 @@ async function parseExternalRef(
 
   const document = await loadSpec<
     OpenAPIV3_1.ComponentsObject & { paths: OpenAPIV3_1.PathsObject }
-  >($file, spec.base, currentDir);
+  >($file, spec.fileCache, spec.base, currentDir);
   const context: Context = { file: $file, base: dirname($file), document };
 
   spec.document.components ??= {};
@@ -240,8 +256,6 @@ function get(path: string, context: Record<string, any>, create?: boolean) {
   return node;
 }
 
-const cache: Record<string, unknown> = {};
-
 function getPath(
   file: string,
   base?: string,
@@ -262,19 +276,20 @@ function getPath(
 
 async function loadSpec<T extends unknown>(
   file: string,
+  fileCache: Record<string, unknown>,
   base?: string,
   currentDir?: string,
 ): Promise<T> {
   let content: string;
   const path = getPath(file, base, currentDir);
 
-  if (cache[path]) {
+  if (fileCache[path]) {
     log.debugUgly(
       green("Load remote ref %s %s"),
       blue(path),
       dim("(From cache)"),
     );
-    return cache[path] as T;
+    return fileCache[path] as T;
   }
 
   try {
@@ -317,9 +332,9 @@ async function loadSpec<T extends unknown>(
     }
   }
 
-  cache[path] = parseYaml(content);
+  fileCache[path] = parseYaml(content);
 
-  return cache[path] as T;
+  return fileCache[path] as T;
 }
 
 function isRemote(file: string): boolean {
