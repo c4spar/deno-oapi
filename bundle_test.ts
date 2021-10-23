@@ -14,7 +14,7 @@ Deno.test({
   name: "bundle openapi.yaml",
   async fn() {
     const document = await bundle("example/openapi.yaml");
-    const output = await stringify(document);
+    const output = stringify(document);
     const expected = await Deno.readTextFile("example/openapi.bundle.yaml");
     assertEquals(output + "\n", expected);
   },

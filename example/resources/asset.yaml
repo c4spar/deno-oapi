@@ -41,7 +41,7 @@ paths:
       tags:
         - Assets
       parameters:
-        - $ref: "#/parameters/asset_id"
+        - $ref: "#/parameters/assetId"
       requestBody:
         required: true
         content:
@@ -59,19 +59,20 @@ paths:
       tags:
         - Assets
       parameters:
-        - $ref: "#/parameters/asset_id"
+        - $ref: "#/parameters/assetId"
       responses:
         200:
           $ref: "../components.yaml#/responses/OK"
         400:
           $ref: "../components.yaml#/responses/BadRequest"
+  assetsIds:
     get:
       description: Get an asset.
       operationId: getAsset
       tags:
         - Assets
       parameters:
-        - $ref: "#/parameters/asset_id"
+        - $ref: "#/parameters/assetIds"
       responses:
         200:
           description: Successfully obtained asset details.
@@ -106,10 +107,20 @@ schemas:
         type: string
 
 parameters:
-  asset_id:
+  assetId:
     description: The id of the asset.
     in: path
-    name: asset_id
+    name: assetId
     required: true
     schema:
-      type: number
+      type: string
+  assetIds:
+    description: A list of asset id's.
+    in: path
+    name: assetIds
+    required: true
+    schema:
+      type: array
+      items:
+        type:
+          $ref: "#/parameters/assetId"

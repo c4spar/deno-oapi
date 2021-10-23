@@ -24,9 +24,10 @@ tags:
 paths:
   /assets:
     $ref: "resources/asset.yaml#/paths/assets"
-  /assets/{id}:
+  /assets/{assetId}:
     $ref: "resources/asset.yaml#/paths/assetsId"
-
+  /assets/{assetIds}:
+    $ref: "resources/asset.yaml#/paths/assetsIds"
 components:
   securitySchemes:
     bearer_token:
