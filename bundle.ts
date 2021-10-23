@@ -297,7 +297,7 @@ async function loadSpec<T extends unknown>(
       log.debug(green("Load remote ref"), blue(path));
       await grant({
         name: "net",
-        host: path,
+        host: new URL(path).hostname,
       });
 
       const response = await fetch(path);
