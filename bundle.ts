@@ -1,32 +1,27 @@
+import { log } from "./debug.ts";
 import {
-  basename,
   blue,
   dim,
   dirname,
   grant,
   green,
   join,
+  magenta,
   // deno-lint-ignore camelcase
   OpenAPIV3_1,
   parseYaml,
   stringifyYaml,
 } from "./deps.ts";
 
-interface OapiOptions {
-  verbose?: number;
-}
-
-export function stringify(file: string, options?: OapiOptions): Promise<string>;
+export function stringify(file: string): Promise<string>;
 export function stringify(
   document: OpenAPIV3_1.Document,
-  options?: OapiOptions,
 ): string;
 export function stringify(
   fileOrDocument: string | OpenAPIV3_1.Document,
-  options?: OapiOptions,
 ): string | Promise<string> {
   if (typeof fileOrDocument === "string") {
-    return bundle(fileOrDocument, options).then((content) =>
+    return bundle(fileOrDocument).then((content) =>
       stringifyYaml(content, { noRefs: true })
     );
   }
@@ -34,41 +29,47 @@ export function stringify(
   return stringifyYaml(fileOrDocument, { noRefs: true });
 }
 
+interface Spec {
+  file: string;
+  base: string;
+  document: OpenAPIV3_1.Document;
+  cache: Record<string, boolean>;
+}
+
+interface Context {
+  file: string;
+  base: string;
+  // deno-lint-ignore no-explicit-any
+  document: Record<string, any>;
+}
+
 export async function bundle(
   file: string,
-  options?: OapiOptions,
 ): Promise<OpenAPIV3_1.Document> {
-  console.error(green("Bundle"), file);
-  const base = dirname(file);
-  file = basename(file);
+  log.info(green("Bundle"), file);
 
-  const document = await loadSpec<OpenAPIV3_1.Document>(
+  const document = await loadSpec<OpenAPIV3_1.Document>(file);
+
+  const spec: Spec = {
     file,
-    base,
-    undefined,
-    options,
-  );
+    base: dirname(file),
+    document,
+    cache: {},
+  };
 
   if (document.components) {
-    await parseRefs(
+    document.components = await parseRefs(
       ".",
       document.components,
-      base,
-      document,
-      document,
-      options,
+      spec,
+      spec,
     );
   }
 
   if (document.paths) {
-    for (const [path, def] of Object.entries(document.paths)) {
-      if (def?.$ref && def.$ref.at(0) !== "#") {
-        document.paths[path] = await parsePathRef(
-          def.$ref,
-          base,
-          document,
-          options,
-        );
+    for (const [path, node] of Object.entries(document.paths)) {
+      if (node?.$ref && node.$ref.at(0) !== "#") {
+        document.paths[path] = await parsePathRef(node.$ref, spec);
       }
     }
   }
@@ -77,173 +78,221 @@ export async function bundle(
 }
 
 async function parsePathRef(
-  file: string,
-  base: string,
-  document: OpenAPIV3_1.Document,
-  options?: OapiOptions,
+  $ref: string,
+  spec: Spec,
 ) {
-  let [path, subPath] = file.split("#");
-  subPath = subPath.replace(/\/paths\//g, "");
+  log.debugVerbose(
+    "Parse path ref %s %s",
+    blue(spec.file),
+    magenta($ref),
+  );
+  const [$file, $path] = $ref.split("#/");
 
-  const components = await loadSpec<
+  const document = await loadSpec<
     OpenAPIV3_1.ComponentsObject & { paths: OpenAPIV3_1.PathsObject }
-  >(path, base, undefined, options);
+  >($file, spec.base);
+  const context: Context = { file: $ref, base: dirname($file), document };
 
-  const paths = components.paths[subPath];
+  const node = get($path, document);
 
-  if (!paths) {
-    throw new Error(`Path ref "${file}" not found.`);
-  }
-
-  return paths && await parseRefs(
-    dirname(path),
-    paths,
-    base,
-    components,
-    document,
-    options,
+  return parseRefs(
+    dirname($file),
+    node,
+    context,
+    spec,
   );
 }
 
 async function parseRefs(
-  parentPath: string,
-  def: Record<string, unknown>,
-  basePath: string,
-  parentDef: Record<string, unknown>,
-  document: OpenAPIV3_1.Document,
-  options?: OapiOptions,
+  currentDir: string,
+  node: Record<string, unknown>,
+  context: Context,
+  spec: Spec,
 ): Promise<Record<string, unknown>> {
-  for (const [name, value] of Object.entries(def)) {
+  for (const [name, value] of Object.entries(node)) {
     if (isRecord(value)) {
       if (typeof value.$ref === "string") {
         if (value.$ref.at(0) === "#") {
-          def[name] = parseInternalRef(
+          node[name] = await parseInternalRef(
             value.$ref,
-            parentDef,
-            document,
+            currentDir,
+            context,
+            spec,
           );
         } else {
-          def[name] = await parseExternalRef(
-            parentPath,
+          node[name] = await parseExternalRef(
             value.$ref,
-            basePath,
-            document,
-            options,
+            currentDir,
+            context,
+            spec,
           );
         }
       } else {
-        def[name] = await parseRefs(
-          parentPath,
+        node[name] = await parseRefs(
+          currentDir,
           value,
-          basePath,
-          parentDef,
-          document,
-          options,
+          context,
+          spec,
         );
       }
     }
   }
 
-  return def;
+  return node;
 }
 
-function parseInternalRef(
-  file: string,
-  // deno-lint-ignore no-explicit-any
-  components: Record<string, any>,
-  document: OpenAPIV3_1.Document,
+async function parseInternalRef(
+  $ref: string,
+  currentDir: string,
+  context: Context,
+  spec: Spec,
 ) {
-  const [_, subPath] = file.split("#/");
-  const subPathParts = subPath.split("/");
+  log.debugVerbose(
+    "Parse int ref %s %s",
+    blue(context.file),
+    magenta($ref),
+  );
 
-  // deno-lint-ignore no-explicit-any
-  let docComps: Record<string, any> = document.components ??= {};
-  for (const path of subPathParts) {
-    if (!components[path]) {
-      throw new ReferenceError(`Ref "${file}" not found.`);
-    }
-    components = components[path];
-    docComps[path] ??= {};
-    docComps = docComps[path];
-  }
-  Object.assign(docComps, components);
+  const [_, $path] = $ref.split("#/");
 
-  return { $ref: `#/components/${subPath}` };
+  spec.document.components ??= {};
+  const node = get($path, context.document);
+  const docNode = get($path, spec.document.components, true);
+
+  await parseRefs(
+    currentDir,
+    node,
+    context,
+    spec,
+  );
+
+  Object.assign(docNode, node);
+
+  return { $ref: `#/components/${$path}` };
 }
 
 async function parseExternalRef(
-  parentDir: string,
-  file: string,
-  base: string,
-  document: OpenAPIV3_1.Document,
-  options?: OapiOptions,
+  $ref: string,
+  currentDir: string,
+  parentContext: Context,
+  spec: Spec,
 ) {
-  const [path, subPath] = file.split("#/");
-  const subPathParts = subPath.split("/");
+  const cacheKey = getPath($ref, spec.base, currentDir);
+  const [$file, $path] = $ref.split("#/");
 
-  const components = await loadSpec<
-    OpenAPIV3_1.ComponentsObject & { paths: OpenAPIV3_1.PathsObject }
-  >(path, base, parentDir, options);
-
-  // deno-lint-ignore no-explicit-any
-  let comps: Record<string, any> = components;
-  // deno-lint-ignore no-explicit-any
-  let docComps: Record<string, any> = document.components ??= {};
-  for (const path of subPathParts) {
-    if (!comps[path]) {
-      throw new ReferenceError(`External ref "${file}" not found.`);
-    }
-    comps = comps[path];
-    docComps[path] ??= {};
-    docComps = docComps[path];
+  if (spec.cache[cacheKey]) {
+    log.debugUgly(
+      "Parse ext ref %s %s %s",
+      blue(parentContext.file),
+      magenta($ref),
+      dim("(From cache)"),
+    );
+    return { $ref: `#/components/${$path}` };
   }
-  Object.assign(docComps, comps);
+  log.debugVerbose(
+    "Parse ext ref %s %s",
+    blue(parentContext.file),
+    magenta($ref),
+  );
+  spec.cache[cacheKey] = true;
+
+  const document = await loadSpec<
+    OpenAPIV3_1.ComponentsObject & { paths: OpenAPIV3_1.PathsObject }
+  >($file, spec.base, currentDir);
+  const context: Context = { file: $file, base: dirname($file), document };
+
+  spec.document.components ??= {};
+  const node = get($path, document);
+  const docNode = get($path, spec.document.components, true);
 
   await parseRefs(
-    parentDir,
-    components,
-    base,
-    components,
-    document,
-    options,
+    join(currentDir, dirname($file)),
+    node,
+    context,
+    spec,
   );
 
-  return { $ref: `#/components/${subPath}` };
+  Object.assign(docNode, node);
+
+  return { $ref: `#/components/${$path}` };
+}
+
+// deno-lint-ignore no-explicit-any
+function get(path: string, context: Record<string, any>, create?: boolean) {
+  const fullPath = [];
+  const subPathParts = path.split("/");
+  let node = context;
+  for (const subPath of subPathParts) {
+    fullPath.push(subPath);
+    if (!node[subPath]) {
+      if (create) {
+        node[subPath] = {};
+      } else {
+        throw new ReferenceError(
+          `Ref "${fullPath.join("/")}" not found ("${path}").\n${
+            Deno.inspect(context, { colors: true })
+          }`,
+        );
+      }
+    }
+    node = node[subPath];
+  }
+  return node;
+}
+
+const cache: Record<string, unknown> = {};
+
+function getPath(
+  file: string,
+  base?: string,
+  currentDir?: string,
+) {
+  if (isRemote(file) || (base && isRemote(base))) {
+    const url = isRemote(file) ? new URL(file) : new URL(
+      currentDir ? currentDir + "/" + file : file,
+      base + "/",
+    );
+    return url.toString();
+  }
+
+  return base && currentDir ? join(base, currentDir, file) : (
+    base ? join(base, file) : file
+  );
 }
 
 async function loadSpec<T extends unknown>(
   file: string,
-  base: string,
-  parentDir?: string,
-  options?: OapiOptions,
+  base?: string,
+  currentDir?: string,
 ): Promise<T> {
-  const verbose = Number(options?.verbose);
   let content: string;
+  const path = getPath(file, base, currentDir);
+
+  if (cache[path]) {
+    log.debugUgly(
+      green("Load remote ref %s %s"),
+      blue(path),
+      dim("(From cache)"),
+    );
+    return cache[path] as T;
+  }
 
   try {
-    if (isRemote(file) || isRemote(base)) {
-      const url = isRemote(file)
-        ? new URL(file)
-        : new URL(parentDir ? parentDir + "/" + file : file, base + "/");
-
-      verbose > 0 && console.error(green("Load remote ref"), blue(url.href));
-
+    if (isRemote(path)) {
+      log.debug(green("Load remote ref"), blue(path));
       await grant({
         name: "net",
-        host: url.host,
+        host: path,
       });
 
-      const response = await fetch(url);
+      const response = await fetch(path);
       if (!response.ok) {
-        throw new Error(`Failed to fetch: ${url} - ${await response.text()}`);
+        throw new Error(`Failed to fetch: ${path} - ${await response.text()}`);
       }
 
       content = await response.text();
     } else {
-      const path = parentDir ? join(base, parentDir, file) : join(base, file);
-
-      verbose > 0 && console.error(green("Load local ref"), blue(path));
-
+      log.debug(green("Load local ref"), blue(path));
       await grant({
         name: "read",
         path,
@@ -251,18 +300,16 @@ async function loadSpec<T extends unknown>(
 
       content = await Deno.readTextFile(path);
     }
-
-    verbose > 2 && console.error(dim(content));
   } catch (error) {
-    verbose > 2 && console.error(error);
+    log.debugVerbose(error);
     if (error instanceof Deno.errors.NotFound) {
       throw new Deno.errors.NotFound(
-        `File not found: "${join(base, file)}"`,
+        `File not found: "${path}"`,
         { cause: error },
       );
     } else if (error instanceof Deno.errors.PermissionDenied) {
       throw new Deno.errors.PermissionDenied(
-        `Permission denied: "${join(base, file)}"`,
+        `Permission denied: "${path}"`,
         { cause: error },
       );
     } else {
@@ -270,7 +317,9 @@ async function loadSpec<T extends unknown>(
     }
   }
 
-  return parseYaml(content) as T;
+  cache[path] = parseYaml(content);
+
+  return cache[path] as T;
 }
 
 function isRemote(file: string): boolean {
