@@ -13,6 +13,7 @@ export {
   dim,
   green,
   magenta,
+  red,
 } from "https://deno.land/std@0.112.0/fmt/colors.ts";
 export { grant } from "https://deno.land/std@0.112.0/permissions/mod.ts";
 export type {
