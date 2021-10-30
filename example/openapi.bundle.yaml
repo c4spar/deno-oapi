@@ -40,23 +40,45 @@ paths:
           $ref: '#/components/responses/BadRequest'
     post:
       description: Greate a new asset.
-      operationId: createAsset
+      operationId: CreateAssetOptions
       tags:
         - Assets
       requestBody:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/CreateAsset'
+              $ref: '#/components/schemas/CreateAssetOptions'
       responses:
         '201':
-          $ref: '#/components/responses/Created'
+          description: Successfully created asset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
         '400':
           $ref: '#/components/responses/BadRequest'
   '/assets/{assetId}':
+    get:
+      description: Get an asset.
+      operationId: getAsset
+      tags:
+        - Assets
+      parameters:
+        - $ref: '#/components/parameters/assetId'
+      responses:
+        '200':
+          description: Successfully obtained asset details.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/BadRequest'
     put:
       description: Update an asset.
-      operationId: updateAsset
+      operationId: UpdateAssetOptions
       tags:
         - Assets
       parameters:
@@ -66,7 +88,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateAsset'
+              $ref: '#/components/schemas/UpdateAssetOptions'
       responses:
         '200':
           $ref: '#/components/responses/OK'
@@ -82,25 +104,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/OK'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-  '/assets/{assetIds}':
-    get:
-      description: Get an asset.
-      operationId: getAsset
-      tags:
-        - Assets
-      parameters:
-        - $ref: '#/components/parameters/assetIds'
-      responses:
-        '200':
-          description: Successfully obtained asset details.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Asset'
         '400':
           $ref: '#/components/responses/BadRequest'
 components:
@@ -121,9 +124,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
-    Created:
-      description: Created
+            $ref: '#/components/schemas/ErrorResponse'
     OK:
       description: OK
   schemas:
@@ -145,7 +146,7 @@ components:
       properties:
         name:
           type: string
-    Error:
+    ErrorResponse:
       type: object
       required:
         - code
@@ -156,14 +157,14 @@ components:
           format: int32
         message:
           type: string
-    CreateAsset:
+    CreateAssetOptions:
       type: object
       required:
         - name
       properties:
         name:
           type: string
-    UpdateAsset:
+    UpdateAssetOptions:
       type: object
       properties:
         name:
@@ -188,14 +189,4 @@ components:
       required: true
       schema:
         type: string
-    assetIds:
-      description: A list of asset id's.
-      in: path
-      name: assetIds
-      required: true
-      schema:
-        type: array
-        items:
-          type:
-            $ref: '#/components/parameters/assetId'
 

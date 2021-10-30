@@ -6,8 +6,8 @@ paths:
       tags:
         - Assets
       parameters:
-        - $ref: "../components.yaml#/parameters/offset"
-        - $ref: "../components.yaml#/parameters/limit"
+        - $ref: "../components.yaml#/components/parameters/offset"
+        - $ref: "../components.yaml#/components/parameters/limit"
       responses:
         200:
           description: Successfully obtained a list of asset.
@@ -16,63 +16,36 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/schemas/Asset"
+                  $ref: "#/components/schemas/Asset"
         400:
-          $ref: "../components.yaml#/responses/BadRequest"
+          $ref: "../components.yaml#/components/responses/BadRequest"
     post:
       description: Greate a new asset.
-      operationId: createAsset
+      operationId: CreateAssetOptions
       tags:
         - Assets
       requestBody:
         content:
           multipart/form-data:
             schema:
-              $ref: "#/schemas/CreateAsset"
+              $ref: "#/components/schemas/CreateAssetOptions"
       responses:
         201:
-          $ref: "../components.yaml#/responses/Created"
+          description: Successfully created asset.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
         400:
-          $ref: "../components.yaml#/responses/BadRequest"
+          $ref: "../components.yaml#/components/responses/BadRequest"
   assetsId:
-    put:
-      description: Update an asset.
-      operationId: updateAsset
-      tags:
-        - Assets
-      parameters:
-        - $ref: "#/parameters/assetId"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/schemas/UpdateAsset"
-      responses:
-        200:
-          $ref: "../components.yaml#/responses/OK"
-        400:
-          $ref: "../components.yaml#/responses/BadRequest"
-    delete:
-      description: Delete an asset.
-      operationId: deleteAsset
-      tags:
-        - Assets
-      parameters:
-        - $ref: "#/parameters/assetId"
-      responses:
-        200:
-          $ref: "../components.yaml#/responses/OK"
-        400:
-          $ref: "../components.yaml#/responses/BadRequest"
-  assetsIds:
     get:
       description: Get an asset.
       operationId: getAsset
       tags:
         - Assets
       parameters:
-        - $ref: "#/parameters/assetIds"
+        - $ref: "#/components/parameters/assetId"
       responses:
         200:
           description: Successfully obtained asset details.
@@ -81,46 +54,67 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/schemas/Asset"
+                  $ref: "#/components/schemas/Asset"
         400:
-          $ref: "../components.yaml#/responses/BadRequest"
+          $ref: "../components.yaml#/components/responses/BadRequest"
+    put:
+      description: Update an asset.
+      operationId: UpdateAssetOptions
+      tags:
+        - Assets
+      parameters:
+        - $ref: "#/components/parameters/assetId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAssetOptions"
+      responses:
+        200:
+          $ref: "../components.yaml#/components/responses/OK"
+        400:
+          $ref: "../components.yaml#/components/responses/BadRequest"
+    delete:
+      description: Delete an asset.
+      operationId: deleteAsset
+      tags:
+        - Assets
+      parameters:
+        - $ref: "#/components/parameters/assetId"
+      responses:
+        200:
+          $ref: "../components.yaml#/components/responses/OK"
+        400:
+          $ref: "../components.yaml#/components/responses/BadRequest"
 
-schemas:
-  Asset:
-    type: object
-    required:
-      - name
-    properties:
-      name:
+components:
+  schemas:
+    Asset:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    CreateAssetOptions:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    UpdateAssetOptions:
+      type: object
+      properties:
+        name:
+          type: string
+  
+  parameters:
+    assetId:
+      description: The id of the asset.
+      in: path
+      name: assetId
+      required: true
+      schema:
         type: string
-  CreateAsset:
-    type: object
-    required:
-      - name
-    properties:
-      name:
-        type: string
-  UpdateAsset:
-    type: object
-    properties:
-      name:
-        type: string
-
-parameters:
-  assetId:
-    description: The id of the asset.
-    in: path
-    name: assetId
-    required: true
-    schema:
-      type: string
-  assetIds:
-    description: A list of asset id's.
-    in: path
-    name: assetIds
-    required: true
-    schema:
-      type: array
-      items:
-        type:
-          $ref: "#/parameters/assetId"

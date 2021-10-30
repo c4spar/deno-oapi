@@ -26,8 +26,6 @@ paths:
     $ref: "resources/asset.yaml#/paths/assets"
   /assets/{assetId}:
     $ref: "resources/asset.yaml#/paths/assetsId"
-  /assets/{assetIds}:
-    $ref: "resources/asset.yaml#/paths/assetsIds"
 components:
   securitySchemes:
     bearer_token:
@@ -39,4 +37,4 @@ components:
       content:
         application/json:
           schema:
-            $ref: "components2.yaml#/schemas/Error2"
+            $ref: "components2.yaml#/components/schemas/Error2"

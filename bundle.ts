@@ -163,7 +163,7 @@ async function parseInternalRef(
       magenta($ref),
       dim("(From cache)"),
     );
-    return { $ref: `#/components/${$path}` };
+    return { $ref: `#/${$path}` };
   }
   log.debugVerbose(
     "Parse int ref %s %s",
@@ -173,7 +173,7 @@ async function parseInternalRef(
 
   spec.document.components ??= {};
   const node = get($path, context.document);
-  const docNode = get($path, spec.document.components, true);
+  const docNode = get($path, spec.document, true);
 
   await parseRefs(
     currentDir,
@@ -184,7 +184,7 @@ async function parseInternalRef(
 
   Object.assign(docNode, node);
 
-  return { $ref: `#/components/${$path}` };
+  return { $ref: `#/${$path}` };
 }
 
 async function parseExternalRef(
@@ -203,7 +203,7 @@ async function parseExternalRef(
       magenta($ref),
       dim("(From cache)"),
     );
-    return { $ref: `#/components/${$path}` };
+    return { $ref: `#/${$path}` };
   }
   log.debugVerbose(
     "Parse ext ref %s %s",
@@ -219,7 +219,7 @@ async function parseExternalRef(
 
   spec.document.components ??= {};
   const node = get($path, document);
-  const docNode = get($path, spec.document.components, true);
+  const docNode = get($path, spec.document, true);
 
   await parseRefs(
     join(currentDir, dirname($file)),
@@ -230,7 +230,7 @@ async function parseExternalRef(
 
   Object.assign(docNode, node);
 
-  return { $ref: `#/components/${$path}` };
+  return { $ref: `#/${$path}` };
 }
 
 // deno-lint-ignore no-explicit-any
