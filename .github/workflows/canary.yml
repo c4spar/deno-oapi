@@ -1,0 +1,25 @@
+name: Canary
+on:
+  schedule:
+    - cron: 0 3 * * *
+jobs:
+  canary:
+    name: Test Canary
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        deno: [canary]
+    env:
+      RUST_BACKTRACE: full
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: ${{ matrix.deno }}
+
+      - name: Run tests
+        run: deno test --allow-all --unstable
