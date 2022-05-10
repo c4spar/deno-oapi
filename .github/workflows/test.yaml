@@ -1,23 +1,21 @@
 name: Test
-
 on:
   push:
+    branches: [main]
   pull_request:
-  schedule:
-    - cron: 0 0 * * *
-
 jobs:
   stable:
     name: Deno Stable
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         deno: [v1.x]
+    env:
+      RUST_BACKTRACE: full
     steps:
       - name: Setup repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Deno
         uses: denoland/setup-deno@v1
@@ -25,13 +23,13 @@ jobs:
           deno-version: ${{ matrix.deno }}
 
       - name: Run tests
-        run: deno test --coverage=./cov --allow-read=./example --jobs 2 --shuffle
+        run: deno test --coverage=./cov --allow-read=./example
 
       - name: Generate lcov
         run: deno coverage --lcov ./cov > ./cov.lcov
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           name: ${{ matrix.os }}-${{ matrix.deno }}
           files: cov.lcov
