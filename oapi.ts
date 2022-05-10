@@ -1,21 +1,21 @@
-import { Command } from "https://deno.land/x/cliffy@v0.20.0/command/command.ts";
-import { UpgradeCommand } from "https://deno.land/x/cliffy@v0.20.0/command/upgrade/upgrade_command.ts";
-import { DenoLandProvider } from "https://deno.land/x/cliffy@v0.20.0/command/upgrade/provider/deno_land.ts";
-import { EnumType } from "https://deno.land/x/cliffy@v0.20.0/command/types/enum.ts";
+import { Command } from "../deno-cliffy/command/command.ts";
+import { UpgradeCommand } from "../deno-cliffy/command/upgrade/upgrade_command.ts";
+import { DenoLandProvider } from "../deno-cliffy/command/upgrade/provider/deno_land.ts";
+import { EnumType } from "../deno-cliffy/command/types/enum.ts";
 import { bold, red } from "./deps.ts";
 import { stringify } from "./bundle.ts";
 import { log } from "./debug.ts";
 
-export const oapi = new Command<void>()
+export const oapi = new Command()
   .name("oapi")
   .description("A Simple OpenAPI Bundler")
   .usage("bundle ./openapi.yaml")
-  .command<[file: string]>("bundle <file:string>")
+  .command("bundle <file:string>")
   .description(
     "Output a single openapi file with all external references.\n\n" +
       "The entry file can be a local or a remote file.",
   )
-  .option<{ verbose?: number }>(
+  .option(
     "-v, --verbose",
     "Increase debug output.\n" +
       `${red(bold("-"))} -v:   Prints url of loaded \$ref's.\n` +
@@ -23,15 +23,16 @@ export const oapi = new Command<void>()
       `${red(bold("-"))} -vvv: Prints more debug informations.`,
     {
       collect: true,
-      value: (_, previus = 0) => ++previus,
-      action: ({ verbose = 0 }) => log.setVerbose(verbose),
+      // deno-lint-ignore no-inferrable-types
+      value: (_, previus: number = 0) => ++previus,
+      action: ({ verbose = 0 }) => log.setVerbose(Number(verbose)),
     },
   )
   .type(
     "verbose",
-    new EnumType(["true", "false", "0", "1", "2", "3"]),
+    new EnumType([true, false, 0, 1, 2, 3]),
   )
-  .globalEnv(
+  .env(
     "OAPI_VERBOSE=<verbose:verbose>",
     "Increase debug output.\n" +
       `${red(bold("-"))} 0|false: Disable all debug output.\n` +
