@@ -7,27 +7,10 @@ import {
   green,
   join,
   magenta,
-  // deno-lint-ignore camelcase
   OpenAPIV3_1,
   parseYaml,
   stringifyYaml,
 } from "./deps.ts";
-
-export function stringify(file: string): Promise<string>;
-export function stringify(
-  document: OpenAPIV3_1.Document,
-): string;
-export function stringify(
-  fileOrDocument: string | OpenAPIV3_1.Document,
-): string | Promise<string> {
-  if (typeof fileOrDocument === "string") {
-    return bundle(fileOrDocument).then((content) =>
-      stringifyYaml(content, { noRefs: true })
-    );
-  }
-
-  return stringifyYaml(fileOrDocument, { noRefs: true });
-}
 
 interface Spec {
   file: string;
@@ -40,12 +23,36 @@ interface Spec {
 interface Context {
   file: string;
   base: string;
-  // deno-lint-ignore no-explicit-any
-  document: Record<string, any>;
+  document: Record<string, unknown>;
+}
+
+export interface BundleOptions {
+  headers?: HeadersInit;
+}
+
+export function stringify(
+  file: string,
+  options?: BundleOptions,
+): Promise<string>;
+export function stringify(
+  document: OpenAPIV3_1.Document,
+): string;
+export function stringify(
+  fileOrDocument: string | OpenAPIV3_1.Document,
+  options?: BundleOptions,
+): string | Promise<string> {
+  if (typeof fileOrDocument === "string") {
+    return bundle(fileOrDocument, options).then((content) =>
+      stringifyYaml(content, { noRefs: true })
+    );
+  }
+
+  return stringifyYaml(fileOrDocument, { noRefs: true });
 }
 
 export async function bundle(
   file: string,
+  options?: BundleOptions,
 ): Promise<OpenAPIV3_1.Document> {
   log.info(green("Bundle"), file);
 
@@ -54,6 +61,7 @@ export async function bundle(
   const document = await loadSpec<OpenAPIV3_1.Document>(
     file,
     fileCache,
+    options,
   );
 
   const spec: Spec = {
@@ -70,13 +78,14 @@ export async function bundle(
       document.components,
       spec,
       spec,
+      options,
     );
   }
 
   if (document.paths) {
     for (const [path, node] of Object.entries(document.paths)) {
       if (node?.$ref && node.$ref.at(0) !== "#") {
-        document.paths[path] = await parsePathRef(node.$ref, spec);
+        document.paths[path] = await parsePathRef(node.$ref, spec, options);
       }
     }
   }
@@ -87,6 +96,7 @@ export async function bundle(
 async function parsePathRef(
   $ref: string,
   spec: Spec,
+  options?: BundleOptions,
 ) {
   log.debugVerbose(
     "Parse path ref %s %s",
@@ -97,7 +107,12 @@ async function parsePathRef(
 
   const document = await loadSpec<
     OpenAPIV3_1.ComponentsObject & { paths: OpenAPIV3_1.PathsObject }
-  >($file, spec.fileCache, spec.base);
+  >(
+    $file,
+    spec.fileCache,
+    options,
+    spec.base,
+  );
   const context: Context = { file: $ref, base: dirname($file), document };
 
   const node = get($path, document);
@@ -107,6 +122,7 @@ async function parsePathRef(
     node,
     context,
     spec,
+    options,
   );
 }
 
@@ -115,6 +131,7 @@ async function parseRefs(
   node: Record<string, unknown>,
   context: Context,
   spec: Spec,
+  options?: BundleOptions,
 ): Promise<Record<string, unknown>> {
   for (const [name, value] of Object.entries(node)) {
     if (isRecord(value)) {
@@ -125,6 +142,7 @@ async function parseRefs(
             currentDir,
             context,
             spec,
+            options,
           );
         } else {
           node[name] = await parseExternalRef(
@@ -132,6 +150,7 @@ async function parseRefs(
             currentDir,
             context,
             spec,
+            options,
           );
         }
       } else {
@@ -140,6 +159,7 @@ async function parseRefs(
           value,
           context,
           spec,
+          options,
         );
       }
     }
@@ -153,6 +173,7 @@ async function parseInternalRef(
   currentDir: string,
   context: Context,
   spec: Spec,
+  options?: BundleOptions,
 ) {
   const [_, $path] = $ref.split("#/");
   const cacheKey = context.file + $ref;
@@ -180,6 +201,7 @@ async function parseInternalRef(
     node,
     context,
     spec,
+    options,
   );
 
   Object.assign(docNode, node);
@@ -192,6 +214,7 @@ async function parseExternalRef(
   currentDir: string,
   parentContext: Context,
   spec: Spec,
+  options?: BundleOptions,
 ) {
   const cacheKey = getPath($ref, spec.base, currentDir);
   const [$file, $path] = $ref.split("#/");
@@ -214,7 +237,13 @@ async function parseExternalRef(
 
   const document = await loadSpec<
     OpenAPIV3_1.ComponentsObject & { paths: OpenAPIV3_1.PathsObject }
-  >($file, spec.fileCache, spec.base, currentDir);
+  >(
+    $file,
+    spec.fileCache,
+    options,
+    spec.base,
+    currentDir,
+  );
   const context: Context = { file: $file, base: dirname($file), document };
 
   spec.document.components ??= {};
@@ -226,6 +255,7 @@ async function parseExternalRef(
     node,
     context,
     spec,
+    options,
   );
 
   Object.assign(docNode, node);
@@ -233,8 +263,7 @@ async function parseExternalRef(
   return { $ref: `#/${$path}` };
 }
 
-// deno-lint-ignore no-explicit-any
-function get(path: string, context: Record<string, any>, create?: boolean) {
+function get(path: string, context: Record<string, unknown>, create?: boolean) {
   const fullPath = [];
   const subPathParts = path.split("/");
   let node = context;
@@ -251,7 +280,7 @@ function get(path: string, context: Record<string, any>, create?: boolean) {
         );
       }
     }
-    node = node[subPath];
+    node = node[subPath] as Record<string, unknown>;
   }
   return node;
 }
@@ -277,6 +306,7 @@ function getPath(
 async function loadSpec<T extends unknown>(
   file: string,
   fileCache: Record<string, unknown>,
+  options?: BundleOptions,
   base?: string,
   currentDir?: string,
 ): Promise<T> {
@@ -300,7 +330,9 @@ async function loadSpec<T extends unknown>(
         host: new URL(path).hostname,
       });
 
-      const response = await fetch(path);
+      const response = await fetch(path, {
+        headers: options?.headers,
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${path} - ${await response.text()}`);
       }
