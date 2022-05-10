@@ -1,7 +1,7 @@
-import { Command } from "../deno-cliffy/command/command.ts";
-import { UpgradeCommand } from "../deno-cliffy/command/upgrade/upgrade_command.ts";
-import { DenoLandProvider } from "../deno-cliffy/command/upgrade/provider/deno_land.ts";
-import { EnumType } from "../deno-cliffy/command/types/enum.ts";
+import { Command } from "https://deno.land/x/cliffy@v0.24.1/command/command.ts";
+import { UpgradeCommand } from "https://deno.land/x/cliffy@v0.24.1/command/upgrade/upgrade_command.ts";
+import { DenoLandProvider } from "https://deno.land/x/cliffy@v0.24.1/command/upgrade/provider/deno_land.ts";
+import { EnumType } from "https://deno.land/x/cliffy@v0.24.1/command/types/enum.ts";
 import { bold, red } from "./deps.ts";
 import { stringify } from "./bundle.ts";
 import { log } from "./debug.ts";
@@ -14,19 +14,6 @@ export const oapi = new Command()
   .description(
     "Output a single openapi file with all external references.\n\n" +
       "The entry file can be a local or a remote file.",
-  )
-  .option(
-    "-v, --verbose",
-    "Increase debug output.\n" +
-      `${red(bold("-"))} -v:   Prints url of loaded \$ref's.\n` +
-      `${red(bold("-"))} -vv:  Prints debug informations.\n` +
-      `${red(bold("-"))} -vvv: Prints more debug informations.`,
-    {
-      collect: true,
-      // deno-lint-ignore no-inferrable-types
-      value: (_, previus: number = 0) => ++previus,
-      action: ({ verbose = 0 }) => log.setVerbose(Number(verbose)),
-    },
   )
   .type(
     "verbose",
@@ -42,6 +29,20 @@ export const oapi = new Command()
     {
       prefix: "OAPI_",
       value: (value) => Number(value),
+    },
+  )
+  .option(
+    "-v, --verbose",
+    "Increase debug output.\n" +
+      `${red(bold("-"))} -v:   Prints url of loaded \$ref's.\n` +
+      `${red(bold("-"))} -vv:  Prints debug informations.\n` +
+      `${red(bold("-"))} -vvv: Prints more debug informations.`,
+    {
+      collect: true,
+      default: 1,
+      // deno-lint-ignore no-inferrable-types
+      value: (_: number | true, previus: number = 0) => ++previus,
+      action: ({ verbose }) => log.setVerbose(Number(verbose)),
     },
   )
   .action(async (_, file: string) => {
