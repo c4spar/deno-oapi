@@ -1,7 +1,7 @@
-import { Command } from "https://deno.land/x/cliffy@v0.24.1/command/command.ts";
-import { UpgradeCommand } from "https://deno.land/x/cliffy@v0.24.1/command/upgrade/upgrade_command.ts";
-import { DenoLandProvider } from "https://deno.land/x/cliffy@v0.24.1/command/upgrade/provider/deno_land.ts";
-import { EnumType } from "https://deno.land/x/cliffy@v0.24.1/command/types/enum.ts";
+import { Command } from "https://deno.land/x/cliffy@v0.24.2/command/command.ts";
+import { UpgradeCommand } from "https://deno.land/x/cliffy@v0.24.2/command/upgrade/upgrade_command.ts";
+import { DenoLandProvider } from "https://deno.land/x/cliffy@v0.24.2/command/upgrade/provider/deno_land.ts";
+import { EnumType } from "https://deno.land/x/cliffy@v0.24.2/command/types/enum.ts";
 import { bold, red } from "./deps.ts";
 import { stringify } from "./bundle.ts";
 import { log } from "./debug.ts";
