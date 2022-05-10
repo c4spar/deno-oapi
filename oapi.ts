@@ -6,9 +6,11 @@ import { ValidationError } from "https://deno.land/x/cliffy@v0.24.2/command/_err
 import { bold, red } from "./deps.ts";
 import { stringify } from "./bundle.ts";
 import { log } from "./debug.ts";
+import { VERSION } from "./version.ts";
 
 const oapi = new Command()
   .name("oapi")
+  .version(VERSION)
   .description("A Simple OpenAPI Bundler")
   .usage("bundle ./openapi.yaml")
   .command("bundle <file:string>")
