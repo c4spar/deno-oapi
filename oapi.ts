@@ -2,11 +2,12 @@ import { Command } from "https://deno.land/x/cliffy@v0.24.2/command/command.ts";
 import { UpgradeCommand } from "https://deno.land/x/cliffy@v0.24.2/command/upgrade/upgrade_command.ts";
 import { DenoLandProvider } from "https://deno.land/x/cliffy@v0.24.2/command/upgrade/provider/deno_land.ts";
 import { EnumType } from "https://deno.land/x/cliffy@v0.24.2/command/types/enum.ts";
+import { ValidationError } from "https://deno.land/x/cliffy@v0.24.2/command/_errors.ts";
 import { bold, red } from "./deps.ts";
 import { stringify } from "./bundle.ts";
 import { log } from "./debug.ts";
 
-export const oapi = new Command()
+const oapi = new Command()
   .name("oapi")
   .description("A Simple OpenAPI Bundler")
   .usage("bundle ./openapi.yaml")
@@ -18,6 +19,16 @@ export const oapi = new Command()
   .type(
     "verbose",
     new EnumType([true, false, 0, 1, 2, 3]),
+  )
+  .type(
+    "header",
+    (type): [string, string] => {
+      if (!type.value.includes(":")) {
+        throw new ValidationError(`Invalid header format: ${type.value}`);
+      }
+      const [name, ...value] = type.value.split(":");
+      return [name.trim(), value.join(":").trim()];
+    },
   )
   .env(
     "OAPI_VERBOSE=<verbose:verbose>",
@@ -31,6 +42,11 @@ export const oapi = new Command()
       value: (value) => Number(value),
     },
   )
+  .env(
+    "OAPI_HEADER=<header:header[]>",
+    "Add request header for authentication.",
+    { prefix: "OAPI_" },
+  )
   .option(
     "-v, --verbose",
     "Increase debug output.\n" +
@@ -39,14 +55,22 @@ export const oapi = new Command()
       `${red(bold("-"))} -vvv: Prints more debug informations.`,
     {
       collect: true,
-      default: 1,
       // deno-lint-ignore no-inferrable-types
-      value: (_: number | true, previus: number = 0) => ++previus,
-      action: ({ verbose }) => log.setVerbose(Number(verbose)),
+      value: (_, previus: number = 0) => ++previus,
+      action: ({ verbose = 0 }) => log.setVerbose(verbose),
     },
   )
-  .action(async (_, file: string) => {
-    console.log(await stringify(file));
+  .option(
+    "-H, --header <header:header>",
+    "Add request header for authentication.",
+    { collect: true },
+  )
+  .action(async (options, file: string) => {
+    console.log(
+      await stringify(file, {
+        headers: options.header,
+      }),
+    );
   })
   .command(
     "upgrade",
