@@ -5,7 +5,7 @@ on:
   pull_request:
 jobs:
   stable:
-    name: Deno Stable
+    name: Test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

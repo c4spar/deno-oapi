@@ -5,7 +5,7 @@ on:
   pull_request:
 jobs:
   lint:
-    name: Lint source
+    name: Lint
     runs-on: ubuntu-latest
     env:
       RUST_BACKTRACE: full
